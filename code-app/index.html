@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cut">
 <meta name="theme-color" content="#0f1115">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Code Timer</title>
@@ -92,9 +95,19 @@ td:first-child { color: var(--muted); width: 42%; }
 <section id="tab-code">
   <div class="row" style="align-items:center;margin-bottom:10px">
     <h1 style="margin:0">Code timer</h1>
-    <div class="seg" style="flex:0 0 170px">
-      <button id="modeBLS">BLS</button><button id="modeACLS">ACLS</button>
+    <div class="seg" style="flex:0 0 216px">
+      <button id="modeBLS">BLS</button><button id="modeACLS">ACLS</button><button id="modePALS">PALS</button>
     </div>
+  </div>
+
+  <div class="card pals">
+    <h2>Patient weight</h2>
+    <div class="row" style="align-items:center">
+      <input type="number" id="pwt" inputmode="decimal" placeholder="0" min="0" step="0.1">
+      <div class="seg" style="flex:0 0 130px"><button class="unitKg">kg</button><button class="unitLb">lb</button></div>
+    </div>
+    <p class="note" id="pwtConv">Enter weight. Every PALS dose and shock is calculated from it.</p>
+    <div id="pwtWarn" class="warn hidden"></div>
   </div>
 
   <div id="preStart" class="card">
@@ -123,7 +136,8 @@ td:first-child { color: var(--muted); width: 42%; }
 
     <!-- ACLS: Epi -->
     <div class="card acls">
-      <h2>Epinephrine 1 mg IV/IO · every 3–5 min</h2>
+      <h2 id="epiTitle">Epinephrine 1 mg IV/IO · every 3–5 min</h2>
+      <div class="status s-ok pals" id="epiDose"></div>
       <div class="row" style="align-items:flex-end">
         <div><div class="label">Since last epi</div><div class="mid" id="epiClock">--:--</div></div>
         <div style="text-align:right;flex:0 0 auto"><div class="label">Doses</div><div class="mid" id="epiCount">0</div></div>
@@ -145,6 +159,7 @@ td:first-child { color: var(--muted); width: 42%; }
         <button class="small" data-log="AED: no shock advised">No shock advised</button>
       </div>
       <button class="danger" id="shockBtn" style="width:100%">⚡ Shock delivered <span id="shockCount"></span></button>
+      <div class="status s-ok pals" id="shockDose" style="margin-bottom:0"></div>
     </div>
 
     <!-- ACLS: antiarrhythmics -->
@@ -193,6 +208,14 @@ td:first-child { color: var(--muted); width: 42%; }
       <div class="log" id="log"></div>
     </div>
   </div>
+
+  <div class="card pals">
+    <details open>
+      <summary id="palsSum">All PALS doses</summary>
+      <table id="palsTable" style="margin-top:8px"></table>
+    </details>
+    <p class="note">Check the concentration in your cart matches the one listed. Joules: use the nearest setting your defib has.</p>
+  </div>
 </section>
 
 <!-- ============ FEVER MEDS TAB ============ -->
@@ -203,7 +226,7 @@ td:first-child { color: var(--muted); width: 42%; }
     <div class="row" style="align-items:center">
       <input type="number" id="wt" inputmode="decimal" placeholder="0" min="0" step="0.1">
       <div class="seg" style="flex:0 0 130px">
-        <button id="unitKg" class="sel">kg</button><button id="unitLb">lb</button>
+        <button class="unitKg sel">kg</button><button class="unitLb">lb</button>
       </div>
     </div>
     <p class="note" id="wtConv">Enter weight to see doses.</p>
@@ -269,7 +292,23 @@ td:first-child { color: var(--muted); width: 42%; }
     </table>
   </div>
   <div class="card">
-    <h2>Post-ROSC targets</h2>
+    <h2>PALS — pediatric</h2>
+    <table>
+      <tr><td>Epinephrine</td><td>0.01 mg/kg IV/IO (0.1 mL/kg of 0.1 mg/mL) · max 1 mg · every 3–5 min</td></tr>
+      <tr><td>Defib</td><td>1st 2 J/kg · 2nd 4 J/kg · then 4 J/kg or more, max 10 J/kg or adult dose</td></tr>
+      <tr><td>Amiodarone</td><td>5 mg/kg (max 300 mg) · may repeat, up to 3 doses for VF/pVT</td></tr>
+      <tr><td>Lidocaine</td><td>1 mg/kg loading dose</td></tr>
+      <tr><td>Adenosine (SVT)</td><td>0.1 mg/kg (max 6 mg) rapid push + flush · 2nd 0.2 mg/kg (max 12 mg)</td></tr>
+      <tr><td>Sync cardioversion</td><td>0.5–1 J/kg · then 2 J/kg</td></tr>
+      <tr><td>Atropine (brady)</td><td>0.02 mg/kg · max 0.5 mg per dose · may repeat once</td></tr>
+      <tr><td>Bradycardia</td><td>HR under 60 with poor perfusion despite oxygen and ventilation → start CPR</td></tr>
+      <tr><td>Ratio</td><td>30:2 one rescuer · 15:2 two rescuers</td></tr>
+      <tr><td>Advanced airway</td><td>Continuous compressions · 1 breath every 2–3 sec (20–30/min)</td></tr>
+      <tr><td>Fluid bolus</td><td>10–20 mL/kg isotonic, reassess after each</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Post-ROSC targets (adult)</h2>
     <table>
       <tr><td>SpO₂</td><td>92–98%</td></tr>
       <tr><td>PaCO₂</td><td>35–45 mmHg</td></tr>
@@ -277,7 +316,7 @@ td:first-child { color: var(--muted); width: 42%; }
       <tr><td>Other</td><td>12-lead ECG · temperature control · treat cause</td></tr>
     </table>
   </div>
-  <p class="note">Summarized from the AHA BLS/ACLS algorithms. Check against your current AHA provider manual and facility protocol — this is a memory aid, not a substitute.</p>
+  <p class="note">Summarized from the AHA BLS/ACLS/PALS algorithms. Check against your current AHA provider manual and facility protocol — this is a memory aid, not a substitute.</p>
   <div class="card">
     <h2>Display</h2>
     <div class="seg">
@@ -303,7 +342,7 @@ td:first-child { color: var(--muted); width: 42%; }
   const KEY = 'codeTimerState.v1';
 
   const blank = () => ({ mode: 'ACLS', startedAt: null, cycleStart: null, lastEpi: null, epiCount: 0,
-    shocks: 0, amio: 0, lido: 0, log: [], hts: {}, ended: false, endedAt: null,
+    shocks: 0, amio: 0, lido: 0, log: [], hts: {}, ended: false, endedAt: null, kg: null, unit: 'kg', typed: null,
     flags: { warned: false, alerted: false, epiAlerted: false } });
 
   let S;
@@ -357,20 +396,66 @@ td:first-child { color: var(--muted); width: 42%; }
   // ---------- mode ----------
   function setMode(m) {
     S.mode = m; save();
-    $('modeBLS').classList.toggle('sel', m === 'BLS');
-    $('modeACLS').classList.toggle('sel', m === 'ACLS');
-    document.querySelectorAll('.acls').forEach(e => e.classList.toggle('hidden', m !== 'ACLS'));
+    ['BLS', 'ACLS', 'PALS'].forEach(x => $('mode' + x).classList.toggle('sel', m === x));
+    document.querySelectorAll('.acls').forEach(e => e.classList.toggle('hidden', m === 'BLS'));
+    document.querySelectorAll('.pals').forEach(e => e.classList.toggle('hidden', m !== 'PALS'));
     document.querySelectorAll('.bls').forEach(e => e.classList.toggle('hidden', m !== 'BLS'));
+    renderPals(); tick();
   }
-  $('modeBLS').onclick = () => { setMode('BLS'); if (S.startedAt) log('Mode: BLS'); };
-  $('modeACLS').onclick = () => { setMode('ACLS'); if (S.startedAt) log('Mode: ACLS'); };
+  ['BLS', 'ACLS', 'PALS'].forEach(m => $('mode' + m).onclick = () => {
+    if (S.mode === m) return; setMode(m); if (S.startedAt) log('Mode: ' + m); });
+
+  // ---------- PALS dosing (all from S.kg) ----------
+  const fmg = x => { const d = x < 1 ? 2 : x < 10 ? 1 : 0; return parseFloat(x.toFixed(d)).toLocaleString(); };
+  const fml = x => parseFloat(x.toFixed(x < 1 ? 2 : 1)).toLocaleString();
+  const J = x => Math.round(Math.min(x, 200));
+  const Jr = (a, b) => J(a) === J(b) ? `${J(a)} J` : `${J(a)}–${J(b)} J`;
+  const peds = () => S.mode === 'PALS';
+  const kgTxt = () => S.kg ? `${fmg(S.kg)} kg` : 'no weight';
+  function epiInfo() {
+    if (!peds()) return { title: 'Epinephrine 1 mg IV/IO · every 3–5 min', btn: 'Epi 1 mg given', log: 'Epinephrine 1 mg IV/IO', dose: '' };
+    const title = 'Epinephrine 0.01 mg/kg IV/IO · every 3–5 min';
+    if (!S.kg) return { title, btn: 'Epi given', log: 'Epinephrine 0.01 mg/kg IV/IO (no weight entered)', dose: 'Enter weight above to calculate the dose' };
+    const mg = Math.min(0.01 * S.kg, 1);
+    return { title, btn: `Epi ${fmg(mg)} mg given`, log: `Epinephrine ${fmg(mg)} mg IV/IO`,
+      dose: `Dose: ${fmg(mg)} mg = ${fml(mg / 0.1)} mL of 0.1 mg/mL${mg === 1 ? ' (adult max)' : ''}` };
+  }
+  function shockTxt(n) {
+    if (!S.kg) return 'Enter weight to calculate joules';
+    if (n === 1) return `${J(2 * S.kg)} J (2 J/kg)`;
+    if (n === 2) return `${J(4 * S.kg)} J (4 J/kg)`;
+    return `${Jr(4 * S.kg, 10 * S.kg)} (4–10 J/kg, capped at 200 J adult dose)`;
+  }
+  const amioMg = () => S.kg ? Math.min(5 * S.kg, 300) : null;
+  function renderPals() {
+    if (typeof S === 'undefined') return;
+    const e = epiInfo();
+    $('epiTitle').textContent = e.title; $('epiBtn').textContent = e.btn; $('epiDose').textContent = e.dose;
+    $('palsSum').textContent = S.kg ? `All PALS doses — ${fmg(S.kg)} kg` : 'All PALS doses — enter weight';
+    if (!S.kg) { $('palsTable').innerHTML = ''; return; }
+    const k = S.kg, rows = [
+      ['Epinephrine (arrest)', '0.01 mg/kg · max 1 mg · 0.1 mg/mL', `${fmg(Math.min(.01 * k, 1))} mg = ${fml(Math.min(.01 * k, 1) / .1)} mL`],
+      ['Defibrillation', '2 → 4 → 4–10 J/kg', `${J(2 * k)} J → ${J(4 * k)} J → ${Jr(4 * k, 10 * k)}`],
+      ['Sync cardioversion', '0.5–1 J/kg, then 2 J/kg', `${Jr(.5 * k, k)} → ${J(2 * k)} J`],
+      ['Amiodarone', '5 mg/kg · max 300 mg · 50 mg/mL', `${fmg(amioMg())} mg = ${fml(amioMg() / 50)} mL`],
+      ['Lidocaine', '1 mg/kg · 20 mg/mL (2%)', `${fmg(k)} mg = ${fml(k / 20)} mL`],
+      ['Adenosine (SVT)', '0.1 mg/kg max 6 → 0.2 mg/kg max 12 · 3 mg/mL',
+        `${fmg(Math.min(.1 * k, 6))} mg = ${fml(Math.min(.1 * k, 6) / 3)} mL → ${fmg(Math.min(.2 * k, 12))} mg = ${fml(Math.min(.2 * k, 12) / 3)} mL`],
+      ['Atropine (brady)', '0.02 mg/kg · max 0.5 mg · 0.1 mg/mL', `${fmg(Math.min(.02 * k, .5))} mg = ${fml(Math.min(.02 * k, .5) / .1)} mL`],
+      ['Fluid bolus', '10–20 mL/kg isotonic', `${fmg(10 * k)}–${fmg(20 * k)} mL`],
+      ['Dextrose D10', '0.5–1 g/kg = 5–10 mL/kg · max 25 g', `${fmg(Math.min(5 * k, 250))}–${fmg(Math.min(10 * k, 250))} mL`],
+      ['Calcium chloride 10%', '20 mg/kg · max 2 g · 100 mg/mL', `${fmg(Math.min(20 * k, 2000))} mg = ${fml(Math.min(20 * k, 2000) / 100)} mL`],
+      ['Sodium bicarb 8.4%', '1 mEq/kg · max 50 mEq · 1 mEq/mL', `${fmg(Math.min(k, 50))} mEq = ${fml(Math.min(k, 50))} mL`],
+    ];
+    $('palsTable').innerHTML = rows.map(r => `<tr><td><b style="color:var(--ink)">${r[0]}</b><br><span style="font-size:13px">${r[1]}</span></td><td><b>${r[2]}</b></td></tr>`).join('');
+  }
 
   // ---------- start / cycle ----------
   $('startBtn').onclick = () => {
     audio(); keepAwake();
-    S = Object.assign(blank(), { mode: S.mode });
+    S = Object.assign(blank(), { mode: S.mode, kg: S.kg, unit: S.unit, typed: S.typed });
     S.startedAt = now(); S.cycleStart = S.startedAt; save();
-    log(`Code started (${S.mode}) — CPR started`);
+    log(`Code started (${S.mode}${peds() ? ', ' + kgTxt() : ''}) — CPR started`);
     show();
   };
   $('checkDoneBtn').onclick = () => {
@@ -383,15 +468,22 @@ td:first-child { color: var(--muted); width: 42%; }
   // ---------- events ----------
   $('epiBtn').onclick = () => {
     audio(); S.epiCount++; S.lastEpi = now(); S.flags.epiAlerted = false; save();
-    log(`Epinephrine 1 mg IV/IO (#${S.epiCount})`); tick();
+    log(`${epiInfo().log} (#${S.epiCount})`); tick();
   };
   $('shockBtn').onclick = () => { audio(); S.shocks++; save(); log(`Shock delivered (#${S.shocks})`); tick(); };
   $('amioBtn').onclick = () => {
+    if (peds()) {
+      if (S.amio >= 3 && !confirm('Amiodarone already given 3 times (15 mg/kg total). Log another dose?')) return;
+      S.amio++; save(); log(`Amiodarone ${S.kg ? fmg(amioMg()) + ' mg' : '5 mg/kg'} (#${S.amio})`); return tick();
+    }
     if (S.amio >= 2 && !confirm('Amiodarone already given twice (450 mg total). Log another dose?')) return;
     S.amio++; save(); log(`Amiodarone ${S.amio === 1 ? '300' : '150'} mg (#${S.amio})`); tick();
   };
   $('lidoBtn').onclick = () => {
-    S.lido++; save(); log(`Lidocaine ${S.lido === 1 ? '1–1.5 mg/kg' : '0.5–0.75 mg/kg'} (#${S.lido})`); tick();
+    S.lido++; save();
+    if (peds()) log(`Lidocaine ${S.kg ? fmg(S.kg) + ' mg' : '1 mg/kg'} (#${S.lido})`);
+    else log(`Lidocaine ${S.lido === 1 ? '1–1.5 mg/kg' : '0.5–0.75 mg/kg'} (#${S.lido})`);
+    tick();
   };
   document.querySelectorAll('[data-log]').forEach(b => b.onclick = () => { audio(); log(b.dataset.log); });
   $('noteBtn').onclick = () => { const t = prompt('Add note to log:'); if (t && t.trim()) log(t.trim()); };
@@ -415,10 +507,10 @@ td:first-child { color: var(--muted); width: 42%; }
   };
   $('resetBtn').onclick = () => {
     if (!confirm('Clear this code and its log? Copy the log first if you need it.')) return;
-    const m = S.mode; S = blank(); S.mode = m; save(); stopMetro(); show();
+    const m = S.mode; S = blank(); S.mode = m; save(); stopMetro(); syncWeight(null); calc(); show();
   };
   $('copyBtn').onclick = async () => {
-    const lines = [`Code log — ${new Date(S.startedAt).toLocaleDateString()} — mode ${S.mode}`,
+    const lines = [`Code log — ${new Date(S.startedAt).toLocaleDateString()} — mode ${S.mode}${peds() ? ' — weight ' + kgTxt() : ''}`,
       ...S.log.map(e => `${milS(e.t)}  (+${mmss2((e.t - S.startedAt) / 1000)})  ${e.text}`),
       `Totals: epi ${S.epiCount}, shocks ${S.shocks}, amiodarone ${S.amio}, lidocaine ${S.lido}`];
     const txt = lines.join('\n');
@@ -455,8 +547,15 @@ td:first-child { color: var(--muted); width: 42%; }
     $('codeClock').textContent = mmss2((endT - S.startedAt) / 1000);
     $('startClock').textContent = mil(S.startedAt);
     $('shockCount').textContent = S.shocks ? `(${S.shocks})` : '';
-    $('amioNext').textContent = S.amio === 0 ? 'next: 300 mg' : S.amio === 1 ? 'next: 150 mg' : `given ×${S.amio}`;
-    $('lidoNext').textContent = S.lido === 0 ? 'next: 1–1.5 mg/kg' : `next: 0.5–0.75 mg/kg (×${S.lido})`;
+    if (peds()) {
+      const a = S.kg ? fmg(amioMg()) + ' mg' : '5 mg/kg';
+      $('amioNext').textContent = S.amio < 3 ? `next: ${a}${S.amio ? ` (×${S.amio})` : ''}` : `given ×${S.amio} (max 3)`;
+      $('lidoNext').textContent = `next: ${S.kg ? fmg(S.kg) + ' mg' : '1 mg/kg'}${S.lido ? ` (×${S.lido})` : ''}`;
+      $('shockDose').textContent = `Next shock (#${S.shocks + 1}): ${shockTxt(S.shocks + 1)}`;
+    } else {
+      $('amioNext').textContent = S.amio === 0 ? 'next: 300 mg' : S.amio === 1 ? 'next: 150 mg' : `given ×${S.amio}`;
+      $('lidoNext').textContent = S.lido === 0 ? 'next: 1–1.5 mg/kg' : `next: 0.5–0.75 mg/kg (×${S.lido})`;
+    }
     $('epiCount').textContent = S.epiCount;
 
     if (S.ended) {
@@ -528,37 +627,41 @@ td:first-child { color: var(--muted); width: 42%; }
   let th = 'auto'; try { th = localStorage.getItem('codeTimerTheme') || 'auto'; } catch {}
   setTheme(th);
 
-  // ---------- fever meds ----------
-  let unit = 'kg';
+  // ---------- shared weight (fever tab + PALS) ----------
+  // Weight lives with the current code, so Reset clears it — no stale weight carried to the next patient.
   const LB = 2.20462;
   const r1 = n => (Math.round(n * 10) / 10).toFixed(1);
   const r0 = n => Math.round(n).toLocaleString();
-  function setUnit(u) {
-    const v = parseFloat($('wt').value);
-    if (!isNaN(v) && u !== unit) $('wt').value = u === 'lb' ? r1(v * LB) : r1(v / LB);
-    unit = u;
-    $('unitKg').classList.toggle('sel', u === 'kg'); $('unitLb').classList.toggle('sel', u === 'lb');
-    calc();
+  function syncWeight(except) {
+    ['wt', 'pwt'].forEach(id => { const el = $(id); if (el === except) return;
+      el.value = S.kg == null ? '' : S.typed != null ? S.typed : r1(S.unit === 'kg' ? S.kg : S.kg * LB); });
+    document.querySelectorAll('.unitKg').forEach(b => b.classList.toggle('sel', S.unit === 'kg'));
+    document.querySelectorAll('.unitLb').forEach(b => b.classList.toggle('sel', S.unit === 'lb'));
+    const conv = S.kg == null ? null : S.unit === 'kg' ? `${r1(S.kg)} kg = ${r1(S.kg * LB)} lb` : `${S.typed != null ? S.typed : r1(S.kg * LB)} lb = ${r1(S.kg)} kg (doses use kg)`;
+    $('wtConv').textContent = conv || 'Enter weight to see doses.';
+    $('pwtConv').textContent = conv || 'Enter weight. Every PALS dose and shock is calculated from it.';
+    const w = S.kg == null ? '' : S.kg < 3 ? 'Under 3 kg — check the weight. Neonates need provider-directed dosing.'
+      : S.kg > 150 ? 'Over 150 kg — check the weight and unit (kg vs lb).' : '';
+    ['wtWarn', 'pwtWarn'].forEach(id => { $(id).textContent = w; $(id).classList.toggle('hidden', !w); });
   }
-  $('unitKg').onclick = () => setUnit('kg');
-  $('unitLb').onclick = () => setUnit('lb');
-  $('wt').addEventListener('input', calc);
+  function onWeight(e) {
+    const v = parseFloat(e.target.value);
+    S.kg = isNaN(v) || v <= 0 ? null : (S.unit === 'kg' ? v : Math.round(v / LB * 10) / 10);  // lb → kg rounded to 0.1
+    S.typed = S.kg == null ? null : v;
+    save(); syncWeight(e.target); renderPals(); calc(); tick();
+  }
+  $('wt').addEventListener('input', onWeight);
+  $('pwt').addEventListener('input', onWeight);
+  const setUnit = u => { if (S.unit !== u) S.typed = null; S.unit = u; save(); syncWeight(null); };
+  document.querySelectorAll('.unitKg').forEach(b => b.onclick = () => setUnit('kg'));
+  document.querySelectorAll('.unitLb').forEach(b => b.onclick = () => setUnit('lb'));
 
+  // ---------- fever meds ----------
   function calc() {
-    const v = parseFloat($('wt').value);
+    const kg = S.kg;
     const ids = ['apapMg', 'apapML', 'apapLow', 'apapDay', 'ibuMg', 'ibuML', 'ibuDrops', 'ibuLow', 'ibuDay'];
-    $('wtWarn').classList.add('hidden'); $('apapCap').classList.add('hidden'); $('ibuCap').classList.add('hidden');
-    if (isNaN(v) || v <= 0) {
-      ids.forEach(i => $(i).textContent = i.endsWith('Mg') ? '— mg' : '—');
-      $('wtConv').textContent = 'Enter weight to see doses.'; return;
-    }
-    const kg = unit === 'kg' ? v : v / LB;
-    $('wtConv').textContent = unit === 'kg' ? `${r1(kg)} kg = ${r1(kg * LB)} lb` : `${r1(v)} lb = ${r1(kg)} kg (doses use kg)`;
-    if (kg < 3 || kg > 150) {
-      $('wtWarn').textContent = kg < 3 ? 'Under 3 kg — check the weight. Neonates need provider-directed dosing.'
-        : 'Over 150 kg — check the weight and unit (kg vs lb).';
-      $('wtWarn').classList.remove('hidden');
-    }
+    $('apapCap').classList.add('hidden'); $('ibuCap').classList.add('hidden');
+    if (!kg) { ids.forEach(i => $(i).textContent = i.endsWith('Mg') ? '— mg' : '—'); return; }
 
     // Acetaminophen
     let a = 15 * kg; const aCap = a > 1000; a = Math.min(a, 1000);
@@ -582,6 +685,12 @@ td:first-child { color: var(--muted); width: 42%; }
     $('ibuCap').classList.toggle('hidden', !iCap);
   }
 
+  // ---------- install as app (offline) ----------
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  syncWeight(null); calc();
   show();
   if (S.startedAt && !S.ended) keepAwake();
 })();
