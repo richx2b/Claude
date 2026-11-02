@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cut">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Code Timer</title>
+<style>
+:root {
+  --bg: #f4f5f7; --card: #ffffff; --ink: #14161a; --muted: #5d6470; --line: #d9dce1;
+  --btn: #e8eaee; --btn-ink: #14161a;
+  --red: #c62828; --red-bg: #fde7e7; --amber: #a86400; --amber-bg: #fff2d6;
+  --green: #1b7a3a; --green-bg: #e1f4e7; --blue: #1f5fbf; --blue-bg: #e3ecfb;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1115; --card: #181b21; --ink: #eef0f3; --muted: #9aa2ae; --line: #2a2f37;
+    --btn: #252a32; --btn-ink: #eef0f3;
+    --red: #ff6b6b; --red-bg: #3a1618; --amber: #ffc04d; --amber-bg: #3a2a0c;
+    --green: #5fd38a; --green-bg: #12301d; --blue: #7aa8ff; --blue-bg: #15233d;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1115; --card: #181b21; --ink: #eef0f3; --muted: #9aa2ae; --line: #2a2f37;
+  --btn: #252a32; --btn-ink: #eef0f3;
+  --red: #ff6b6b; --red-bg: #3a1618; --amber: #ffc04d; --amber-bg: #3a2a0c;
+  --green: #5fd38a; --green-bg: #12301d; --blue: #7aa8ff; --blue-bg: #15233d;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+body { padding: env(safe-area-inset-top) 0 calc(80px + env(safe-area-inset-bottom)); }
+main { max-width: 640px; margin: 0 auto; padding: 12px 16px; }
+h1 { font-size: 18px; margin: 4px 0 12px; }
+h2 { font-size: 15px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.row > * { flex: 1 1 0; min-width: 0; }
+button { font: inherit; font-weight: 600; border: 0; border-radius: 12px; padding: 14px 10px;
+  background: var(--btn); color: var(--btn-ink); cursor: pointer; min-height: 52px; touch-action: manipulation; }
+button:active { transform: scale(.98); }
+button.primary { background: var(--blue); color: #fff; }
+button.danger { background: var(--red); color: #fff; }
+button.go { background: var(--green); color: #fff; }
+button.small { min-height: 40px; padding: 8px 10px; font-size: 14px; }
+button.on { outline: 3px solid var(--blue); }
+.big { font-variant-numeric: tabular-nums; font-size: 56px; font-weight: 700; line-height: 1; }
+.mid { font-variant-numeric: tabular-nums; font-size: 40px; font-weight: 700; line-height: 1; }
+.label { color: var(--muted); font-size: 14px; }
+.status { border-radius: 12px; padding: 12px; margin: 10px 0; font-weight: 700; }
+.s-neutral { background: var(--btn); }
+.s-wait { background: var(--blue-bg); color: var(--blue); }
+.s-due { background: var(--amber-bg); color: var(--amber); }
+.s-over { background: var(--red-bg); color: var(--red); }
+.s-ok { background: var(--green-bg); color: var(--green); }
+.flash { animation: flash 1s steps(2) infinite; }
+@keyframes flash { 50% { opacity: .35; } }
+.hidden { display: none !important; }
+.seg { display: flex; background: var(--btn); border-radius: 12px; padding: 4px; gap: 4px; }
+.seg button { flex: 1; min-height: 42px; background: transparent; }
+.seg button.sel { background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--line);
+  display: flex; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); z-index: 10; }
+nav.tabs button { flex: 1; background: transparent; min-height: 56px; font-size: 14px; color: var(--muted); }
+nav.tabs button.sel { color: var(--blue); }
+.log { max-height: 260px; overflow: auto; font-variant-numeric: tabular-nums; font-size: 15px; }
+.log div { padding: 6px 0; border-bottom: 1px solid var(--line); display: flex; gap: 10px; }
+.log .t { font-weight: 700; min-width: 44px; }
+.log .o { color: var(--muted); min-width: 52px; }
+input[type=number] { font: inherit; font-size: 28px; font-weight: 700; width: 100%; padding: 12px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.dose { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.kv { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.kv:last-child { border-bottom: 0; }
+.kv b { font-variant-numeric: tabular-nums; text-align: right; }
+.note { font-size: 14px; color: var(--muted); margin: 8px 0 0; }
+.warn { background: var(--amber-bg); color: var(--amber); border-radius: 10px; padding: 10px; font-size: 14px; font-weight: 600; margin-top: 8px; }
+.checks label { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.checks input { width: 22px; height: 22px; }
+details summary { cursor: pointer; font-weight: 700; padding: 4px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+td { padding: 7px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td:first-child { color: var(--muted); width: 42%; }
+</style>
+</head>
+<body>
+<main>
+
+<!-- ============ CODE TAB ============ -->
+<section id="tab-code">
+  <div class="row" style="align-items:center;margin-bottom:10px">
+    <h1 style="margin:0">Code timer</h1>
+    <div class="seg" style="flex:0 0 170px">
+      <button id="modeBLS">BLS</button><button id="modeACLS">ACLS</button>
+    </div>
+  </div>
+
+  <div id="preStart" class="card">
+    <button id="startBtn" class="danger" style="width:100%;min-height:80px;font-size:22px">START CODE</button>
+    <p class="note">Starts the code clock and the first 2-minute CPR cycle. Keep this screen open — the app keeps the screen awake and beeps/vibrates when something is due.</p>
+  </div>
+
+  <div id="running" class="hidden">
+    <div class="card">
+      <div class="row" style="align-items:flex-end">
+        <div><div class="label">Code time</div><div class="big" id="codeClock">00:00</div></div>
+        <div style="text-align:right;flex:0 0 auto"><div class="label">Started</div><div class="mid" id="startClock" style="font-size:28px">----</div></div>
+      </div>
+    </div>
+
+    <!-- CPR cycle / pulse check -->
+    <div class="card">
+      <h2>CPR cycle · pulse &amp; rhythm check</h2>
+      <div class="mid" id="cycleClock">2:00</div>
+      <div class="status s-wait" id="cycleStatus">Compressions — push hard, push fast</div>
+      <div class="row">
+        <button class="go" id="checkDoneBtn">Check done — resume CPR</button>
+      </div>
+      <p class="note" id="cycleNote">At 15 sec left: next compressor ready, charge defib. At 0: stop for pulse/rhythm check (under 10 sec) and switch compressors.</p>
+    </div>
+
+    <!-- ACLS: Epi -->
+    <div class="card acls">
+      <h2>Epinephrine 1 mg IV/IO · every 3–5 min</h2>
+      <div class="row" style="align-items:flex-end">
+        <div><div class="label">Since last epi</div><div class="mid" id="epiClock">--:--</div></div>
+        <div style="text-align:right;flex:0 0 auto"><div class="label">Doses</div><div class="mid" id="epiCount">0</div></div>
+      </div>
+      <div class="status s-neutral" id="epiStatus">No epi given yet</div>
+      <button class="primary" id="epiBtn" style="width:100%">Epi 1 mg given</button>
+    </div>
+
+    <!-- Rhythm / shocks -->
+    <div class="card">
+      <h2>Rhythm &amp; shocks</h2>
+      <div class="row acls" style="margin-bottom:8px">
+        <button class="small" data-log="Rhythm: VF / pVT (shockable)">VF / pVT</button>
+        <button class="small" data-log="Rhythm: PEA">PEA</button>
+        <button class="small" data-log="Rhythm: Asystole">Asystole</button>
+      </div>
+      <div class="row bls" style="margin-bottom:8px">
+        <button class="small" data-log="AED attached">AED on</button>
+        <button class="small" data-log="AED: no shock advised">No shock advised</button>
+      </div>
+      <button class="danger" id="shockBtn" style="width:100%">⚡ Shock delivered <span id="shockCount"></span></button>
+    </div>
+
+    <!-- ACLS: antiarrhythmics -->
+    <div class="card acls">
+      <h2>Antiarrhythmic (VF / pVT after shocks)</h2>
+      <div class="row">
+        <button id="amioBtn">Amiodarone<br><span class="label" id="amioNext">300 mg</span></button>
+        <button id="lidoBtn">Lidocaine<br><span class="label" id="lidoNext">1–1.5 mg/kg</span></button>
+      </div>
+    </div>
+
+    <!-- Interventions -->
+    <div class="card">
+      <h2>Other events</h2>
+      <div class="row" style="margin-bottom:8px">
+        <button class="small acls" data-log="IV/IO access">IV / IO</button>
+        <button class="small acls" data-log="Advanced airway placed">Adv. airway</button>
+        <button class="small" data-log="Compressor switched">Switch</button>
+      </div>
+      <div class="row" style="margin-bottom:8px">
+        <button class="small" id="metroBtn">♪ 110/min</button>
+        <button class="small" id="noteBtn">+ Note</button>
+        <button class="small" id="undoBtn">Undo last</button>
+      </div>
+      <div class="row">
+        <button class="go" id="roscBtn">ROSC</button>
+        <button id="endBtn">End code</button>
+      </div>
+    </div>
+
+    <!-- H's and T's -->
+    <div class="card acls">
+      <details>
+        <summary>H's &amp; T's (reversible causes)</summary>
+        <div class="checks" id="hts"></div>
+      </details>
+    </div>
+
+    <!-- Log -->
+    <div class="card">
+      <div class="row" style="align-items:center;margin-bottom:6px">
+        <h2 style="margin:0">Event log</h2>
+        <button class="small" id="copyBtn" style="flex:0 0 auto">Copy</button>
+        <button class="small" id="resetBtn" style="flex:0 0 auto">Reset</button>
+      </div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEVER MEDS TAB ============ -->
+<section id="tab-meds" class="hidden">
+  <h1>Tylenol &amp; Motrin dosing</h1>
+  <div class="card">
+    <h2>Weight</h2>
+    <div class="row" style="align-items:center">
+      <input type="number" id="wt" inputmode="decimal" placeholder="0" min="0" step="0.1">
+      <div class="seg" style="flex:0 0 130px">
+        <button id="unitKg" class="sel">kg</button><button id="unitLb">lb</button>
+      </div>
+    </div>
+    <p class="note" id="wtConv">Enter weight to see doses.</p>
+    <div id="wtWarn" class="warn hidden"></div>
+  </div>
+
+  <div class="card">
+    <h2>Acetaminophen (Tylenol)</h2>
+    <div class="dose" id="apapMg">— mg</div>
+    <div class="label">15 mg/kg · every 4–6 hr · max 5 doses in 24 hr</div>
+    <div style="margin-top:10px">
+      <div class="kv"><span>Liquid 160 mg / 5 mL<br><span class="label">(infant &amp; children's, US)</span></span><b id="apapML">—</b></div>
+      <div class="kv"><span>Low end (10 mg/kg)</span><b id="apapLow">—</b></div>
+      <div class="kv"><span>Max single dose</span><b>1,000 mg</b></div>
+      <div class="kv"><span>Max in 24 hr</span><b id="apapDay">—</b></div>
+    </div>
+    <div id="apapCap" class="warn hidden">Capped at adult max single dose (1,000 mg).</div>
+  </div>
+
+  <div class="card">
+    <h2>Ibuprofen (Motrin / Advil)</h2>
+    <div class="dose" id="ibuMg">— mg</div>
+    <div class="label">10 mg/kg · every 6–8 hr · max 4 doses in 24 hr</div>
+    <div style="margin-top:10px">
+      <div class="kv"><span>Children's liquid 100 mg / 5 mL</span><b id="ibuML">—</b></div>
+      <div class="kv"><span>Infant drops 50 mg / 1.25 mL</span><b id="ibuDrops">—</b></div>
+      <div class="kv"><span>Low end (5 mg/kg)</span><b id="ibuLow">—</b></div>
+      <div class="kv"><span>Max single dose</span><b>400 mg</b></div>
+      <div class="kv"><span>Max in 24 hr</span><b id="ibuDay">—</b></div>
+    </div>
+    <div id="ibuCap" class="warn hidden">Capped at max single dose (400 mg).</div>
+    <div class="warn">Not for babies under 6 months. Avoid if dehydrated, kidney problems, bleeding risk, or active GI bleed.</div>
+  </div>
+  <p class="note">mL rounded to 0.1. Always check the concentration on the bottle you're holding — it's the most common source of dosing errors. Follow your facility's protocol and provider orders.</p>
+</section>
+
+<!-- ============ REFERENCE TAB ============ -->
+<section id="tab-ref" class="hidden">
+  <h1>Quick reference</h1>
+  <div class="card">
+    <h2>BLS — high-quality CPR</h2>
+    <table>
+      <tr><td>Rate</td><td>100–120 / min</td></tr>
+      <tr><td>Depth, adult</td><td>At least 2 in (5 cm), not over 2.4 in (6 cm)</td></tr>
+      <tr><td>Depth, child</td><td>About 2 in (5 cm) — at least 1/3 chest depth</td></tr>
+      <tr><td>Depth, infant</td><td>About 1.5 in (4 cm) — at least 1/3 chest depth</td></tr>
+      <tr><td>Ratio, adult</td><td>30:2 (1 or 2 rescuers)</td></tr>
+      <tr><td>Ratio, child/infant</td><td>30:2 one rescuer · 15:2 two rescuers</td></tr>
+      <tr><td>Advanced airway</td><td>Continuous compressions, 1 breath every 6 sec (10/min)</td></tr>
+      <tr><td>Pulse check</td><td>Under 10 sec, every 2 min</td></tr>
+      <tr><td>Pauses</td><td>Keep under 10 sec · full recoil · switch compressor every 2 min</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>ACLS — adult cardiac arrest</h2>
+    <table>
+      <tr><td>Epinephrine</td><td>1 mg IV/IO every 3–5 min. Non-shockable: give ASAP. Shockable: after initial shocks fail (typically after 2nd shock).</td></tr>
+      <tr><td>Amiodarone</td><td>1st: 300 mg bolus · 2nd: 150 mg</td></tr>
+      <tr><td>Lidocaine</td><td>1st: 1–1.5 mg/kg · then 0.5–0.75 mg/kg · max 3 mg/kg</td></tr>
+      <tr><td>Defib, biphasic</td><td>Per manufacturer (often 120–200 J). Unknown: use max.</td></tr>
+      <tr><td>Defib, monophasic</td><td>360 J</td></tr>
+      <tr><td>CPR quality</td><td>ETCO₂ at least 10 mmHg (aim for 20+). Sudden rise to 35–40 suggests ROSC.</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Post-ROSC targets</h2>
+    <table>
+      <tr><td>SpO₂</td><td>92–98%</td></tr>
+      <tr><td>PaCO₂</td><td>35–45 mmHg</td></tr>
+      <tr><td>Blood pressure</td><td>SBP at least 90 · MAP at least 65</td></tr>
+      <tr><td>Other</td><td>12-lead ECG · temperature control · treat cause</td></tr>
+    </table>
+  </div>
+  <p class="note">Summarized from the AHA BLS/ACLS algorithms. Check against your current AHA provider manual and facility protocol — this is a memory aid, not a substitute.</p>
+  <div class="card">
+    <h2>Display</h2>
+    <div class="seg">
+      <button data-theme-set="auto">Auto</button><button data-theme-set="light">Light</button><button data-theme-set="dark">Dark</button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<nav class="tabs">
+  <button data-tab="code" class="sel">❤️<br>Code</button>
+  <button data-tab="meds">💊<br>Fever meds</button>
+  <button data-tab="ref">📋<br>Reference</button>
+</nav>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const CYCLE = 120;           // seconds
+  const WARN = 15;             // seconds before end of cycle
+  const EPI_DUE = 180, EPI_OVER = 300;
+  const KEY = 'codeTimerState.v1';
+
+  const blank = () => ({ mode: 'ACLS', startedAt: null, cycleStart: null, lastEpi: null, epiCount: 0,
+    shocks: 0, amio: 0, lido: 0, log: [], hts: {}, ended: false, endedAt: null,
+    flags: { warned: false, alerted: false, epiAlerted: false } });
+
+  let S;
+  try { S = Object.assign(blank(), JSON.parse(localStorage.getItem(KEY)) || {}); } catch { S = blank(); }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+
+  // ---------- formatting ----------
+  const pad = n => String(n).padStart(2, '0');
+  const mmss = s => { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ':' + pad(s % 60); };
+  const mmss2 = s => { s = Math.max(0, Math.floor(s)); return pad(Math.floor(s / 60)) + ':' + pad(s % 60); };
+  const mil = t => { const d = new Date(t); return pad(d.getHours()) + pad(d.getMinutes()); };
+  const milS = t => { const d = new Date(t); return pad(d.getHours()) + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); };
+  const now = () => Date.now();
+  const since = t => (now() - t) / 1000;
+
+  // ---------- audio / vibration / wake lock ----------
+  let ac = null;
+  const audio = () => { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch {} }
+    if (ac && ac.state === 'suspended') ac.resume(); return ac; };
+  function tone(freq, dur, when = 0, vol = 0.3) {
+    const a = audio(); if (!a) return;
+    const o = a.createOscillator(), g = a.createGain();
+    o.frequency.value = freq; o.type = 'square';
+    g.gain.setValueAtTime(vol, a.currentTime + when);
+    g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + when + dur);
+    o.connect(g).connect(a.destination); o.start(a.currentTime + when); o.stop(a.currentTime + when + dur + .02);
+  }
+  const alertBig = () => { [0, .3, .6].forEach(w => tone(880, .22, w)); navigator.vibrate?.([400, 150, 400, 150, 400]); };
+  const alertSmall = () => { tone(660, .18); tone(660, .18, .25); navigator.vibrate?.([200, 100, 200]); };
+  const click = () => tone(1200, .03, 0, 0.25);
+
+  let wakeLock = null;
+  async function keepAwake() {
+    try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch {}
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && S.startedAt && !S.ended) keepAwake(); });
+
+  // ---------- log ----------
+  function log(text) {
+    if (!S.startedAt) return;
+    S.log.push({ t: now(), text }); save(); renderLog();
+  }
+  function renderLog() {
+    const el = $('log');
+    el.innerHTML = S.log.slice().reverse().map(e =>
+      `<div><span class="t">${mil(e.t)}</span><span class="o">+${mmss2((e.t - S.startedAt) / 1000)}</span><span>${esc(e.text)}</span></div>`).join('');
+  }
+  const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ---------- mode ----------
+  function setMode(m) {
+    S.mode = m; save();
+    $('modeBLS').classList.toggle('sel', m === 'BLS');
+    $('modeACLS').classList.toggle('sel', m === 'ACLS');
+    document.querySelectorAll('.acls').forEach(e => e.classList.toggle('hidden', m !== 'ACLS'));
+    document.querySelectorAll('.bls').forEach(e => e.classList.toggle('hidden', m !== 'BLS'));
+  }
+  $('modeBLS').onclick = () => { setMode('BLS'); if (S.startedAt) log('Mode: BLS'); };
+  $('modeACLS').onclick = () => { setMode('ACLS'); if (S.startedAt) log('Mode: ACLS'); };
+
+  // ---------- start / cycle ----------
+  $('startBtn').onclick = () => {
+    audio(); keepAwake();
+    S = Object.assign(blank(), { mode: S.mode });
+    S.startedAt = now(); S.cycleStart = S.startedAt; save();
+    log(`Code started (${S.mode}) — CPR started`);
+    show();
+  };
+  $('checkDoneBtn').onclick = () => {
+    audio();
+    S.cycleStart = now(); S.flags.warned = false; S.flags.alerted = false; save();
+    log('Pulse/rhythm check — CPR resumed');
+    tick();
+  };
+
+  // ---------- events ----------
+  $('epiBtn').onclick = () => {
+    audio(); S.epiCount++; S.lastEpi = now(); S.flags.epiAlerted = false; save();
+    log(`Epinephrine 1 mg IV/IO (#${S.epiCount})`); tick();
+  };
+  $('shockBtn').onclick = () => { audio(); S.shocks++; save(); log(`Shock delivered (#${S.shocks})`); tick(); };
+  $('amioBtn').onclick = () => {
+    if (S.amio >= 2 && !confirm('Amiodarone already given twice (450 mg total). Log another dose?')) return;
+    S.amio++; save(); log(`Amiodarone ${S.amio === 1 ? '300' : '150'} mg (#${S.amio})`); tick();
+  };
+  $('lidoBtn').onclick = () => {
+    S.lido++; save(); log(`Lidocaine ${S.lido === 1 ? '1–1.5 mg/kg' : '0.5–0.75 mg/kg'} (#${S.lido})`); tick();
+  };
+  document.querySelectorAll('[data-log]').forEach(b => b.onclick = () => { audio(); log(b.dataset.log); });
+  $('noteBtn').onclick = () => { const t = prompt('Add note to log:'); if (t && t.trim()) log(t.trim()); };
+  $('undoBtn').onclick = () => {
+    if (S.log.length <= 1) return;
+    const last = S.log[S.log.length - 1];
+    if (!confirm(`Remove "${last.text}"?`)) return;
+    S.log.pop();
+    // roll back counters tied to that entry
+    if (/^Epinephrine/.test(last.text)) { S.epiCount--; const prev = [...S.log].reverse().find(e => /^Epinephrine/.test(e.text)); S.lastEpi = prev ? prev.t : null; }
+    if (/^Shock delivered/.test(last.text)) S.shocks--;
+    if (/^Amiodarone/.test(last.text)) S.amio--;
+    if (/^Lidocaine/.test(last.text)) S.lido--;
+    if (last.text === 'Code ended') { S.ended = false; S.endedAt = null; keepAwake(); }
+    save(); renderLog(); tick();
+  };
+  $('roscBtn').onclick = () => { log('ROSC — check post-ROSC targets'); };
+  $('endBtn').onclick = () => {
+    if (!confirm('End the code? Timers stop; log is kept.')) return;
+    log('Code ended'); S.ended = true; S.endedAt = now(); save(); stopMetro(); try { wakeLock?.release(); } catch {} tick();
+  };
+  $('resetBtn').onclick = () => {
+    if (!confirm('Clear this code and its log? Copy the log first if you need it.')) return;
+    const m = S.mode; S = blank(); S.mode = m; save(); stopMetro(); show();
+  };
+  $('copyBtn').onclick = async () => {
+    const lines = [`Code log — ${new Date(S.startedAt).toLocaleDateString()} — mode ${S.mode}`,
+      ...S.log.map(e => `${milS(e.t)}  (+${mmss2((e.t - S.startedAt) / 1000)})  ${e.text}`),
+      `Totals: epi ${S.epiCount}, shocks ${S.shocks}, amiodarone ${S.amio}, lidocaine ${S.lido}`];
+    const txt = lines.join('\n');
+    try { await navigator.clipboard.writeText(txt); $('copyBtn').textContent = 'Copied'; }
+    catch { prompt('Copy the log:', txt); }
+    setTimeout(() => $('copyBtn').textContent = 'Copy', 1500);
+  };
+
+  // ---------- metronome ----------
+  let metro = null;
+  function stopMetro() { clearInterval(metro); metro = null; $('metroBtn').classList.remove('on'); }
+  $('metroBtn').onclick = () => {
+    if (metro) return stopMetro();
+    audio(); metro = setInterval(click, 60000 / 110); $('metroBtn').classList.add('on');
+  };
+
+  // ---------- H's & T's ----------
+  const HT = ['Hypovolemia', 'Hypoxia', 'Hydrogen ion (acidosis)', 'Hypo-/hyperkalemia', 'Hypothermia',
+    'Tension pneumothorax', 'Tamponade (cardiac)', 'Toxins', 'Thrombosis, pulmonary', 'Thrombosis, coronary'];
+  $('hts').innerHTML = HT.map((h, i) => `<label><input type="checkbox" data-ht="${i}"> ${h}</label>`).join('');
+  $('hts').addEventListener('change', e => {
+    const i = e.target.dataset.ht; if (i == null) return;
+    S.hts[i] = e.target.checked; save();
+    if (e.target.checked) log(`Considered/treated: ${HT[i]}`);
+  });
+
+  // ---------- render loop ----------
+  function setStatus(el, cls, text, flash = false) {
+    el.className = 'status ' + cls + (flash ? ' flash' : ''); el.textContent = text;
+  }
+  function tick() {
+    if (!S.startedAt) return;
+    const endT = S.ended ? S.endedAt : now();
+    $('codeClock').textContent = mmss2((endT - S.startedAt) / 1000);
+    $('startClock').textContent = mil(S.startedAt);
+    $('shockCount').textContent = S.shocks ? `(${S.shocks})` : '';
+    $('amioNext').textContent = S.amio === 0 ? 'next: 300 mg' : S.amio === 1 ? 'next: 150 mg' : `given ×${S.amio}`;
+    $('lidoNext').textContent = S.lido === 0 ? 'next: 1–1.5 mg/kg' : `next: 0.5–0.75 mg/kg (×${S.lido})`;
+    $('epiCount').textContent = S.epiCount;
+
+    if (S.ended) {
+      setStatus($('cycleStatus'), 's-neutral', 'Code ended');
+      $('cycleClock').textContent = '—';
+      $('epiClock').textContent = S.lastEpi ? mmss((endT - S.lastEpi) / 1000) : '--:--';
+      setStatus($('epiStatus'), 's-neutral', 'Code ended');
+      document.querySelectorAll('#running button:not(#copyBtn):not(#resetBtn):not(#undoBtn)').forEach(b => b.disabled = true);
+      return;
+    }
+    document.querySelectorAll('#running button').forEach(b => b.disabled = false);
+
+    // CPR cycle
+    const left = CYCLE - since(S.cycleStart);
+    const cs = $('cycleStatus');
+    if (left > WARN) {
+      $('cycleClock').textContent = mmss(left);
+      setStatus(cs, 's-wait', 'Compressions — push hard, push fast');
+    } else if (left > 0) {
+      $('cycleClock').textContent = mmss(left);
+      setStatus(cs, 's-due', 'Get ready: next compressor in place, charge defib');
+      if (!S.flags.warned) { S.flags.warned = true; save(); alertSmall(); }
+    } else {
+      $('cycleClock').textContent = '+' + mmss(-left);
+      setStatus(cs, 's-over', 'PULSE / RHYTHM CHECK NOW — switch compressor', true);
+      if (!S.flags.alerted) { S.flags.alerted = true; save(); alertBig(); }
+    }
+
+    // Epi
+    if (S.mode === 'ACLS') {
+      const es = $('epiStatus');
+      if (!S.lastEpi) { $('epiClock').textContent = '--:--'; setStatus(es, 's-neutral', 'No epi given yet'); }
+      else {
+        const e = since(S.lastEpi);
+        $('epiClock').textContent = mmss(e);
+        if (e < EPI_DUE) setStatus(es, 's-wait', `Next epi window opens in ${mmss(EPI_DUE - e)}`);
+        else if (e < EPI_OVER) {
+          setStatus(es, 's-due', `EPI DUE — window closes in ${mmss(EPI_OVER - e)}`, true);
+          if (!S.flags.epiAlerted) { S.flags.epiAlerted = true; save(); alertBig(); }
+        } else setStatus(es, 's-over', `EPI OVERDUE by ${mmss(e - EPI_OVER)}`, true);
+      }
+    }
+  }
+
+  function show() {
+    const started = !!S.startedAt;
+    $('preStart').classList.toggle('hidden', started);
+    $('running').classList.toggle('hidden', !started);
+    document.querySelectorAll('[data-ht]').forEach(c => c.checked = !!S.hts[c.dataset.ht]);
+    setMode(S.mode); renderLog(); tick();
+  }
+  setInterval(tick, 250);
+
+  // ---------- tabs ----------
+  document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('nav.tabs button').forEach(x => x.classList.toggle('sel', x === b));
+    ['code', 'meds', 'ref'].forEach(t => $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+    window.scrollTo(0, 0);
+  });
+
+  // ---------- theme ----------
+  function setTheme(t) {
+    if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', t);
+    document.querySelectorAll('[data-theme-set]').forEach(b => b.classList.toggle('sel', b.dataset.themeSet === t));
+    try { localStorage.setItem('codeTimerTheme', t); } catch {}
+  }
+  document.querySelectorAll('[data-theme-set]').forEach(b => b.onclick = () => setTheme(b.dataset.themeSet));
+  let th = 'auto'; try { th = localStorage.getItem('codeTimerTheme') || 'auto'; } catch {}
+  setTheme(th);
+
+  // ---------- fever meds ----------
+  let unit = 'kg';
+  const LB = 2.20462;
+  const r1 = n => (Math.round(n * 10) / 10).toFixed(1);
+  const r0 = n => Math.round(n).toLocaleString();
+  function setUnit(u) {
+    const v = parseFloat($('wt').value);
+    if (!isNaN(v) && u !== unit) $('wt').value = u === 'lb' ? r1(v * LB) : r1(v / LB);
+    unit = u;
+    $('unitKg').classList.toggle('sel', u === 'kg'); $('unitLb').classList.toggle('sel', u === 'lb');
+    calc();
+  }
+  $('unitKg').onclick = () => setUnit('kg');
+  $('unitLb').onclick = () => setUnit('lb');
+  $('wt').addEventListener('input', calc);
+
+  function calc() {
+    const v = parseFloat($('wt').value);
+    const ids = ['apapMg', 'apapML', 'apapLow', 'apapDay', 'ibuMg', 'ibuML', 'ibuDrops', 'ibuLow', 'ibuDay'];
+    $('wtWarn').classList.add('hidden'); $('apapCap').classList.add('hidden'); $('ibuCap').classList.add('hidden');
+    if (isNaN(v) || v <= 0) {
+      ids.forEach(i => $(i).textContent = i.endsWith('Mg') ? '— mg' : '—');
+      $('wtConv').textContent = 'Enter weight to see doses.'; return;
+    }
+    const kg = unit === 'kg' ? v : v / LB;
+    $('wtConv').textContent = unit === 'kg' ? `${r1(kg)} kg = ${r1(kg * LB)} lb` : `${r1(v)} lb = ${r1(kg)} kg (doses use kg)`;
+    if (kg < 3 || kg > 150) {
+      $('wtWarn').textContent = kg < 3 ? 'Under 3 kg — check the weight. Neonates need provider-directed dosing.'
+        : 'Over 150 kg — check the weight and unit (kg vs lb).';
+      $('wtWarn').classList.remove('hidden');
+    }
+
+    // Acetaminophen
+    let a = 15 * kg; const aCap = a > 1000; a = Math.min(a, 1000);
+    const aLow = Math.min(10 * kg, 1000);
+    const aDay = Math.min(75 * kg, 4000);
+    $('apapMg').textContent = `${r0(a)} mg`;
+    $('apapML').textContent = `${r1(a / 32)} mL`;
+    $('apapLow').textContent = `${r0(aLow)} mg · ${r1(aLow / 32)} mL`;
+    $('apapDay').textContent = `${r0(aDay)} mg`;
+    $('apapCap').classList.toggle('hidden', !aCap);
+
+    // Ibuprofen
+    let i = 10 * kg; const iCap = i > 400; i = Math.min(i, 400);
+    const iLow = Math.min(5 * kg, 400);
+    const iDay = Math.min(40 * kg, 1200);
+    $('ibuMg').textContent = `${r0(i)} mg`;
+    $('ibuML').textContent = `${r1(i / 20)} mL`;
+    $('ibuDrops').textContent = `${r1(i / 40)} mL`;
+    $('ibuLow').textContent = `${r0(iLow)} mg · ${r1(iLow / 20)} mL`;
+    $('ibuDay').textContent = `${r0(iDay)} mg${iDay === 1200 ? ' (OTC limit)' : ''}`;
+    $('ibuCap').classList.toggle('hidden', !iCap);
+  }
+
+  show();
+  if (S.startedAt && !S.ended) keepAwake();
+})();
+</script>
+</body>
+</html>
