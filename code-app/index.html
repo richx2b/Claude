@@ -239,11 +239,14 @@ td:first-child { color: var(--muted); width: 42%; }
     <div class="label">15 mg/kg · every 4–6 hr · max 5 doses in 24 hr</div>
     <div style="margin-top:10px">
       <div class="kv"><span>Liquid 160 mg / 5 mL<br><span class="label">(infant &amp; children's, US)</span></span><b id="apapML">—</b></div>
+      <div class="kv tabrow" id="apapChewRow"><span>Chewable 160 mg</span><b id="apapChew"></b></div>
+      <div class="kv tabrow" id="apapTabRow"><span>Adult tablet 325 mg</span><b id="apapTab"></b></div>
       <div class="kv"><span>Low end (10 mg/kg)</span><b id="apapLow">—</b></div>
       <div class="kv"><span>Max single dose</span><b>1,000 mg</b></div>
       <div class="kv"><span>Max in 24 hr</span><b id="apapDay">—</b></div>
     </div>
     <div id="apapCap" class="warn hidden">Capped at adult max single dose (1,000 mg).</div>
+    <p class="note">Don't combine with other products that contain acetaminophen. Many cold and flu medicines do.</p>
   </div>
 
   <div class="card">
@@ -253,6 +256,8 @@ td:first-child { color: var(--muted); width: 42%; }
     <div style="margin-top:10px">
       <div class="kv"><span>Children's liquid 100 mg / 5 mL</span><b id="ibuML">—</b></div>
       <div class="kv"><span>Infant drops 50 mg / 1.25 mL</span><b id="ibuDrops">—</b></div>
+      <div class="kv tabrow" id="ibuChewRow"><span>Chewable 100 mg</span><b id="ibuChew"></b></div>
+      <div class="kv tabrow" id="ibuTabRow"><span>Adult tablet 200 mg</span><b id="ibuTab"></b></div>
       <div class="kv"><span>Low end (5 mg/kg)</span><b id="ibuLow">—</b></div>
       <div class="kv"><span>Max single dose</span><b>400 mg</b></div>
       <div class="kv"><span>Max in 24 hr</span><b id="ibuDay">—</b></div>
@@ -260,6 +265,7 @@ td:first-child { color: var(--muted); width: 42%; }
     <div id="ibuCap" class="warn hidden">Capped at max single dose (400 mg).</div>
     <div class="warn">Not for babies under 6 months. Avoid if dehydrated, kidney problems, bleeding risk, or active GI bleed.</div>
   </div>
+  <p class="note">Tablets are rounded down to the nearest half tablet. Chewables only if the child can chew safely; adult tablets only if they can swallow pills. Teaspoons are rounded to the nearest ¼. Use the syringe or cup that came with the bottle, not a kitchen spoon.</p>
   <p class="note">mL rounded to 0.1. Always check the concentration on the bottle you're holding — it's the most common source of dosing errors. Follow your facility's protocol and provider orders.</p>
 </section>
 
@@ -657,10 +663,25 @@ td:first-child { color: var(--muted); width: 42%; }
   document.querySelectorAll('.unitLb').forEach(b => b.onclick = () => setUnit('lb'));
 
   // ---------- fever meds ----------
+  // Whole number + ¼ ½ ¾ in plain text, e.g. 1.5 -> "1½"
+  const frac = x => { const w = Math.floor(x), f = Math.round((x - w) * 4) / 4;
+    return (w || f === 0 ? String(w) : '') + ({ 0.25: '¼', 0.5: '½', 0.75: '¾' }[f] || ''); };
+  // mL with a teaspoon line under it (skipped when under ¼ tsp)
+  function setML(id, ml) {
+    const tsp = Math.round(ml / 5 * 4) / 4;
+    $(id).innerHTML = `${r1(ml)} mL` + (tsp >= 0.25 ? `<br><span class="label">about ${frac(tsp)} teaspoon${tsp > 1 ? 's' : ''}</span>` : '');
+  }
+  // Tablet count rounded DOWN to the nearest half so it never exceeds the mg dose; hidden under 1 tablet
+  function tabs(drug, kind, mg, strength) {
+    const n = Math.floor(mg / strength * 2) / 2;
+    $(drug + kind + 'Row').classList.toggle('hidden', n < 1);
+    $(drug + kind).textContent = `${frac(n)} tablet${n > 1 ? 's' : ''} (${r0(n * strength)} mg)`;
+  }
   function calc() {
     const kg = S.kg;
     const ids = ['apapMg', 'apapML', 'apapLow', 'apapDay', 'ibuMg', 'ibuML', 'ibuDrops', 'ibuLow', 'ibuDay'];
     $('apapCap').classList.add('hidden'); $('ibuCap').classList.add('hidden');
+    document.querySelectorAll('.tabrow').forEach(r => r.classList.add('hidden'));
     if (!kg) { ids.forEach(i => $(i).textContent = i.endsWith('Mg') ? '— mg' : '—'); return; }
 
     // Acetaminophen
@@ -668,7 +689,8 @@ td:first-child { color: var(--muted); width: 42%; }
     const aLow = Math.min(10 * kg, 1000);
     const aDay = Math.min(75 * kg, 4000);
     $('apapMg').textContent = `${r0(a)} mg`;
-    $('apapML').textContent = `${r1(a / 32)} mL`;
+    setML('apapML', a / 32);
+    tabs('apap', 'Chew', a, 160); tabs('apap', 'Tab', a, 325);
     $('apapLow').textContent = `${r0(aLow)} mg · ${r1(aLow / 32)} mL`;
     $('apapDay').textContent = `${r0(aDay)} mg`;
     $('apapCap').classList.toggle('hidden', !aCap);
@@ -678,7 +700,8 @@ td:first-child { color: var(--muted); width: 42%; }
     const iLow = Math.min(5 * kg, 400);
     const iDay = Math.min(40 * kg, 1200);
     $('ibuMg').textContent = `${r0(i)} mg`;
-    $('ibuML').textContent = `${r1(i / 20)} mL`;
+    setML('ibuML', i / 20);
+    tabs('ibu', 'Chew', i, 100); tabs('ibu', 'Tab', i, 200);
     $('ibuDrops').textContent = `${r1(i / 40)} mL`;
     $('ibuLow').textContent = `${r0(iLow)} mg · ${r1(iLow / 20)} mL`;
     $('ibuDay').textContent = `${r0(iDay)} mg${iDay === 1200 ? ' (OTC limit)' : ''}`;
