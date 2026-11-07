@@ -1,7 +1,7 @@
 // Offline cache. Serves the saved copy instantly (no waiting on bad hospital wifi),
 // then quietly fetches any update for next time.
-const CACHE = 'code-timer-v3';
-const FILES = ['./', './index.html', './manifest.json', './icon-180.png', './icon-192.png', './icon-512.png'];
+const CACHE = 'code-timer-v4';
+const FILES = ['./', './index.html', './tools.js', './manifest.json', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));

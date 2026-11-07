@@ -86,6 +86,26 @@ details summary { cursor: pointer; font-weight: 700; padding: 4px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 15px; }
 td { padding: 7px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
 td:first-child { color: var(--muted); width: 42%; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fld label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 3px; }
+.fld input, .fld select, input.search { font: inherit; font-size: 20px; font-weight: 600; width: 100%; padding: 9px 10px;
+  border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.fld select { font-size: 15px; padding: 4px 6px; width: auto; margin-left: 6px; }
+input.search { font-size: 18px; margin-bottom: 12px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.p-yes { background: var(--green-bg); color: var(--green); }
+.p-no { background: var(--red-bg); color: var(--red); }
+.p-cau { background: var(--amber-bg); color: var(--amber); }
+.ivcard .hd { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+.ivcard .r { display: grid; grid-template-columns: 52px 1fr; gap: 8px; padding: 5px 0; border-top: 1px solid var(--line); font-size: 15px; }
+.ivcard .r > span:first-child { color: var(--muted); font-size: 13px; padding-top: 1px; }
+.flag-lo, .flag-hi { font-weight: 700; color: var(--red); }
+.flag-ok { color: var(--green); font-weight: 700; }
+.steps { margin: 0; padding-left: 22px; }
+.steps li { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.steps li:last-child { border-bottom: 0; }
+.steps .lbl { font-size: 13px; color: var(--muted); font-weight: 700; }
+.medcard .dose { font-size: 26px; }
 </style>
 </head>
 <body>
@@ -220,7 +240,7 @@ td:first-child { color: var(--muted); width: 42%; }
 
 <!-- ============ FEVER MEDS TAB ============ -->
 <section id="tab-meds" class="hidden">
-  <h1>Tylenol &amp; Motrin dosing</h1>
+  <h1>Peds dosing</h1>
   <div class="card">
     <h2>Weight</h2>
     <div class="row" style="align-items:center">
@@ -265,8 +285,35 @@ td:first-child { color: var(--muted); width: 42%; }
     <div id="ibuCap" class="warn hidden">Capped at max single dose (400 mg).</div>
     <div class="warn">Not for babies under 6 months. Avoid if dehydrated, kidney problems, bleeding risk, or active GI bleed.</div>
   </div>
+  <div id="pedsMore"></div>
+
+  <div class="card">
+    <details>
+      <summary id="palsSum2">Code doses (PALS)</summary>
+      <table id="palsTable2" style="margin-top:8px"></table>
+    </details>
+  </div>
+
   <p class="note">Tablets are rounded down to the nearest half tablet. Chewables only if the child can chew safely; adult tablets only if they can swallow pills. Teaspoons are rounded to the nearest ¼. Use the syringe or cup that came with the bottle, not a kitchen spoon.</p>
   <p class="note">mL rounded to 0.1. Always check the concentration on the bottle you're holding — it's the most common source of dosing errors. Follow your facility's protocol and provider orders.</p>
+</section>
+
+<!-- ============ IV MIXING TAB ============ -->
+<section id="tab-iv" class="hidden">
+  <h1>IV mixing &amp; rates</h1>
+  <input type="search" class="search" id="ivSearch" placeholder="Search drug or brand…" autocomplete="off">
+  <div id="ivList"></div>
+  <p class="note">Common adult standard mixes. Concentrations, diluents and IV push rules vary by facility. Your pharmacy and policy win.</p>
+</section>
+
+<!-- ============ CALCULATORS TAB ============ -->
+<section id="tab-calc" class="hidden">
+  <div class="row" style="align-items:center;margin-bottom:12px">
+    <h1 style="margin:0">Calculators</h1>
+    <div class="seg" style="flex:0 0 190px"><button id="calcHemoBtn" class="sel">Hemo</button><button id="calcAbgBtn">ABG</button></div>
+  </div>
+  <div id="calcHemo"></div>
+  <div id="calcAbg" class="hidden"></div>
 </section>
 
 <!-- ============ REFERENCE TAB ============ -->
@@ -335,8 +382,10 @@ td:first-child { color: var(--muted); width: 42%; }
 
 <nav class="tabs">
   <button data-tab="code" class="sel">❤️<br>Code</button>
-  <button data-tab="meds">💊<br>Fever meds</button>
-  <button data-tab="ref">📋<br>Reference</button>
+  <button data-tab="meds">🧒<br>Peds</button>
+  <button data-tab="iv">💉<br>IV mix</button>
+  <button data-tab="calc">🧮<br>Calc</button>
+  <button data-tab="ref">📋<br>Ref</button>
 </nav>
 
 <script>
@@ -438,7 +487,8 @@ td:first-child { color: var(--muted); width: 42%; }
     const e = epiInfo();
     $('epiTitle').textContent = e.title; $('epiBtn').textContent = e.btn; $('epiDose').textContent = e.dose;
     $('palsSum').textContent = S.kg ? `All PALS doses — ${fmg(S.kg)} kg` : 'All PALS doses — enter weight';
-    if (!S.kg) { $('palsTable').innerHTML = ''; return; }
+    $('palsSum2').textContent = S.kg ? `Code doses (PALS) — ${fmg(S.kg)} kg` : 'Code doses (PALS) — enter weight';
+    if (!S.kg) { $('palsTable').innerHTML = $('palsTable2').innerHTML = ''; return; }
     const k = S.kg, rows = [
       ['Epinephrine (arrest)', '0.01 mg/kg · max 1 mg · 0.1 mg/mL', `${fmg(Math.min(.01 * k, 1))} mg = ${fml(Math.min(.01 * k, 1) / .1)} mL`],
       ['Defibrillation', '2 → 4 → 4–10 J/kg', `${J(2 * k)} J → ${J(4 * k)} J → ${Jr(4 * k, 10 * k)}`],
@@ -453,7 +503,7 @@ td:first-child { color: var(--muted); width: 42%; }
       ['Calcium chloride 10%', '20 mg/kg · max 2 g · 100 mg/mL', `${fmg(Math.min(20 * k, 2000))} mg = ${fml(Math.min(20 * k, 2000) / 100)} mL`],
       ['Sodium bicarb 8.4%', '1 mEq/kg · max 50 mEq · 1 mEq/mL', `${fmg(Math.min(k, 50))} mEq = ${fml(Math.min(k, 50))} mL`],
     ];
-    $('palsTable').innerHTML = rows.map(r => `<tr><td><b style="color:var(--ink)">${r[0]}</b><br><span style="font-size:13px">${r[1]}</span></td><td><b>${r[2]}</b></td></tr>`).join('');
+    $('palsTable').innerHTML = $('palsTable2').innerHTML = rows.map(r => `<tr><td><b style="color:var(--ink)">${r[0]}</b><br><span style="font-size:13px">${r[1]}</span></td><td><b>${r[2]}</b></td></tr>`).join('');
   }
 
   // ---------- start / cycle ----------
@@ -618,7 +668,7 @@ td:first-child { color: var(--muted); width: 42%; }
   // ---------- tabs ----------
   document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => {
     document.querySelectorAll('nav.tabs button').forEach(x => x.classList.toggle('sel', x === b));
-    ['code', 'meds', 'ref'].forEach(t => $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+    ['code', 'meds', 'iv', 'calc', 'ref'].forEach(t => $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
     window.scrollTo(0, 0);
   });
 
@@ -682,6 +732,7 @@ td:first-child { color: var(--muted); width: 42%; }
     const ids = ['apapMg', 'apapML', 'apapLow', 'apapDay', 'ibuMg', 'ibuML', 'ibuDrops', 'ibuLow', 'ibuDay'];
     $('apapCap').classList.add('hidden'); $('ibuCap').classList.add('hidden');
     document.querySelectorAll('.tabrow').forEach(r => r.classList.add('hidden'));
+    pedsMore(kg);
     if (!kg) { ids.forEach(i => $(i).textContent = i.endsWith('Mg') ? '— mg' : '—'); return; }
 
     // Acetaminophen
@@ -708,6 +759,44 @@ td:first-child { color: var(--muted); width: 42%; }
     $('ibuCap').classList.toggle('hidden', !iCap);
   }
 
+  // ---------- Zofran, Decadron, Benadryl (+ anaphylaxis epi) ----------
+  function pedsMore(kg) {
+    const v = (mg, conc) => kg ? `${fmg(mg)} mg = ${fml(mg / conc)} mL` : '—';
+    const kv = (a, b) => `<div class="kv"><span>${a}</span><b>${b}</b></div>`;
+    const card = (title, big, sub, rows, warn) => `<div class="card medcard"><h2>${title}</h2>
+      <div class="dose">${kg ? big : '— mg'}</div><div class="label">${sub}</div>
+      <div style="margin-top:8px">${rows.join('')}</div>${warn ? `<div class="warn">${warn}</div>` : ''}</div>`;
+
+    const z = Math.min(0.15 * (kg || 0), 4);
+    const band = !kg ? '—' : kg < 8 ? 'Under 8 kg: use mg/kg' : kg < 15 ? '2 mg' : kg <= 30 ? '4 mg' : '8 mg';
+    const dx = Math.min(0.6 * (kg || 0), 16), dxLow = Math.min(0.15 * (kg || 0), 16);
+    const db = Math.min(1 * (kg || 0), 50), dbDay = Math.min(5 * (kg || 0), 300);
+    const epi = Math.min(0.01 * (kg || 0), 0.5);
+    const auto = !kg ? '—' : kg < 7.5 ? 'Under 7.5 kg: draw up the mg/kg dose' : kg < 15 ? '0.1 mg' : kg < 30 ? '0.15 mg' : '0.3 mg';
+
+    $('pedsMore').innerHTML =
+      card('Ondansetron (Zofran)', `${fmg(z)} mg`, '0.15 mg/kg · max 4 mg · every 8 hr · IV or PO', [
+        kv('IV 2 mg/mL', v(z, 2)),
+        kv('Oral solution 4 mg / 5 mL', v(z, 0.8)),
+        kv('ODT by weight<br><span class="label">(8–15 kg 2 mg · 15–30 kg 4 mg · over 30 kg 8 mg)</span>', band),
+      ], 'Not usually given under 6 months. Can prolong QT: caution with long QT or other QT drugs.') +
+      card('Dexamethasone (Decadron)', `${fmg(dx)} mg`, 'Croup / asthma: 0.6 mg/kg · max 16 mg · PO, IM or IV · usually 1 dose', [
+        kv('IV solution 4 mg/mL<br><span class="label">(often given by mouth)</span>', v(dx, 4)),
+        kv('Oral concentrate 1 mg/mL', v(dx, 1)),
+        kv('Low-dose croup option<br><span class="label">0.15 mg/kg</span>', kg ? `${fmg(dxLow)} mg` : '—'),
+      ], 'Oral elixir also comes as 0.5 mg / 5 mL — 10× more volume. Check the bottle.') +
+      card('Diphenhydramine (Benadryl)', `${fmg(db)} mg`, '1 mg/kg · max 50 mg · every 6 hr · PO or IV', [
+        kv('Liquid 12.5 mg / 5 mL', kg ? `${fmg(db)} mg = ${fml(db / 2.5)} mL` : '—'),
+        kv('IV 50 mg/mL', v(db, 50)),
+        kv('Chewable 12.5 mg', kg && db >= 12.5 ? (n => `${frac(n)} tablet${n > 1 ? 's' : ''}`)(Math.floor(db / 12.5 * 2) / 2) : '—'),
+        kv('Max in 24 hr', kg ? `${fmg(dbDay)} mg` : '—'),
+      ], 'Not for under 2 years without a provider. Can cause agitation in kids. It does not treat anaphylaxis.') +
+      card('Anaphylaxis: epinephrine IM', `${fmg(epi)} mg`, '0.01 mg/kg of 1 mg/mL · max 0.5 mg · thigh · repeat every 5–15 min', [
+        kv('Volume (1 mg/mL)', kg ? `${fml(epi)} mL` : '—'),
+        kv('Auto-injector', auto),
+      ], 'Epi first, always. Benadryl and steroids are add-ons, not substitutes.');
+  }
+
   // ---------- install as app (offline) ----------
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -718,5 +807,6 @@ td:first-child { color: var(--muted); width: 42%; }
   if (S.startedAt && !S.ended) keepAwake();
 })();
 </script>
+<script src="tools.js"></script>
 </body>
 </html>
