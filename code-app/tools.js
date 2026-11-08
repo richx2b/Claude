@@ -106,17 +106,45 @@
       pushTxt: 'Yes. 4 mg over at least 30 sec (2–5 min is gentler).',
       note: 'Prolongs QT.' },
   ];
+  // IM route for each IV card: [yes | no | cau, what to know]
+  const IM = {
+    'Piperacillin-tazobactam': ['no', 'No. IV only.'],
+    'Cefazolin': ['yes', 'Yes, deep IM into a large muscle.'],
+    'Ceftriaxone': ['yes', 'Yes, deep IM. Often mixed with 1% lidocaine (no epi) for pain. Split doses over 1 g between sites. Never give the lidocaine mix IV.'],
+    'Cefepime': ['yes', 'Yes, deep IM (mainly mild UTI dosing).'],
+    'Meropenem': ['no', 'No. IV only.'],
+    'Ampicillin-sulbactam': ['yes', 'Yes, deep IM.'],
+    'Vancomycin': ['no', 'Never. Causes tissue necrosis.'],
+    'Metronidazole': ['no', 'No. IV only.'],
+    'Levofloxacin': ['no', 'No. IV only.'],
+    'Azithromycin': ['no', 'Never IM.'],
+    'Potassium chloride': ['no', 'Never.'],
+    'Magnesium sulfate': ['cau', 'OB protocols only (e.g. preeclampsia): 50% solution, deep IM. Very painful.'],
+    'Calcium gluconate': ['no', 'No. Causes tissue necrosis.'],
+    'Amiodarone drip': ['no', 'No.'],
+    'Norepinephrine': ['no', 'No.'],
+    'Diltiazem': ['no', 'No.'],
+    'Adenosine': ['no', 'No.'],
+    'Furosemide': ['yes', 'Yes, when IV access isn\'t available.'],
+    'Pantoprazole': ['no', 'No. IV only.'],
+    'Ondansetron': ['yes', 'Yes. 4 mg undiluted, single injection.'],
+  };
+  const IMPILL = { yes: '<span class="pill p-yes">IM OK</span>', no: '<span class="pill p-no">No IM</span>',
+    cau: '<span class="pill p-cau">IM: special cases</span>' };
   const PILL = { yes: '<span class="pill p-yes">Push OK</span>', no: '<span class="pill p-no">No push</span>',
     cau: '<span class="pill p-cau">Push: special cases</span>' };
   function renderIV() {
     const q = $('ivSearch').value.trim().toLowerCase();
-    const list = IV.filter(d => !q || (d.n + ' ' + d.b).toLowerCase().includes(q));
+    // typing "im" or "push" filters to drugs that can go that way
+    const list = q === 'im' ? IV.filter(d => IM[d.n][0] !== 'no') : q === 'push' ? IV.filter(d => d.push !== 'no')
+      : IV.filter(d => !q || (d.n + ' ' + d.b).toLowerCase().includes(q));
     $('ivList').innerHTML = list.length ? list.map(d => `
       <div class="card ivcard">
-        <div class="hd"><div><b>${d.n}</b> <span class="label">(${d.b})</span></div>${PILL[d.push]}</div>
+        <div class="hd"><div><b>${d.n}</b> <span class="label">(${d.b})</span></div><div class="pills">${PILL[d.push]}${IMPILL[IM[d.n][0]]}</div></div>
         <div class="r"><span>Mix</span><span>${d.mix}</span></div>
         <div class="r"><span>Rate</span><span>${d.rate}</span></div>
         <div class="r"><span>Push</span><span>${d.pushTxt}</span></div>
+        <div class="r"><span>IM</span><span>${IM[d.n][1]}</span></div>
         ${d.note ? `<div class="r"><span>Note</span><span>${d.note}</span></div>` : ''}
       </div>`).join('') : '<p class="note">No match.</p>';
   }

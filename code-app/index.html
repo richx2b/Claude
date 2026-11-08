@@ -96,6 +96,7 @@ input.search { font-size: 18px; margin-bottom: 12px; }
 .p-yes { background: var(--green-bg); color: var(--green); }
 .p-no { background: var(--red-bg); color: var(--red); }
 .p-cau { background: var(--amber-bg); color: var(--amber); }
+.ivcard .pills { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .ivcard .hd { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
 .ivcard .r { display: grid; grid-template-columns: 52px 1fr; gap: 8px; padding: 5px 0; border-top: 1px solid var(--line); font-size: 15px; }
 .ivcard .r > span:first-child { color: var(--muted); font-size: 13px; padding-top: 1px; }
@@ -301,7 +302,7 @@ input.search { font-size: 18px; margin-bottom: 12px; }
 <!-- ============ IV MIXING TAB ============ -->
 <section id="tab-iv" class="hidden">
   <h1>IV mixing &amp; rates</h1>
-  <input type="search" class="search" id="ivSearch" placeholder="Search drug or brand…" autocomplete="off">
+  <input type="search" class="search" id="ivSearch" placeholder="Search drug, or type IM or push" autocomplete="off">
   <div id="ivList"></div>
   <p class="note">Common adult standard mixes. Concentrations, diluents and IV push rules vary by facility. Your pharmacy and policy win.</p>
 </section>
