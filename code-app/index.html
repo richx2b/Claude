@@ -66,7 +66,7 @@ button.on { outline: 3px solid var(--blue); }
 .seg button.sel { background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.2); }
 nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--line);
   display: flex; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); z-index: 10; }
-nav.tabs button { flex: 1; background: transparent; min-height: 56px; font-size: 14px; color: var(--muted); }
+nav.tabs button { flex: 1; background: transparent; min-height: 56px; font-size: 13px; padding: 8px 2px; color: var(--muted); }
 nav.tabs button.sel { color: var(--blue); }
 .log { max-height: 260px; overflow: auto; font-variant-numeric: tabular-nums; font-size: 15px; }
 .log div { padding: 6px 0; border-bottom: 1px solid var(--line); display: flex; gap: 10px; }
@@ -102,6 +102,7 @@ input.search { font-size: 18px; margin-bottom: 12px; }
 .ivcard .r > span:first-child { color: var(--muted); font-size: 13px; padding-top: 1px; }
 .flag-lo, .flag-hi { font-weight: 700; color: var(--red); }
 .flag-ok { color: var(--green); font-weight: 700; }
+.flag-due { color: var(--amber); font-weight: 700; }
 .steps { margin: 0; padding-left: 22px; }
 .steps li { padding: 8px 0; border-bottom: 1px solid var(--line); }
 .steps li:last-child { border-bottom: 0; }
@@ -317,6 +318,12 @@ input.search { font-size: 18px; margin-bottom: 12px; }
   <div id="calcAbg" class="hidden"></div>
 </section>
 
+<!-- ============ VENTILATOR TAB ============ -->
+<section id="tab-vent" class="hidden">
+  <h1>Ventilator</h1>
+  <div id="vent"></div>
+</section>
+
 <!-- ============ REFERENCE TAB ============ -->
 <section id="tab-ref" class="hidden">
   <h1>Quick reference</h1>
@@ -384,8 +391,9 @@ input.search { font-size: 18px; margin-bottom: 12px; }
 <nav class="tabs">
   <button data-tab="code" class="sel">❤️<br>Code</button>
   <button data-tab="meds">🧒<br>Peds</button>
-  <button data-tab="iv">💉<br>IV mix</button>
+  <button data-tab="iv">💉<br>IV</button>
   <button data-tab="calc">🧮<br>Calc</button>
+  <button data-tab="vent">🫁<br>Vent</button>
   <button data-tab="ref">📋<br>Ref</button>
 </nav>
 
@@ -669,7 +677,7 @@ input.search { font-size: 18px; margin-bottom: 12px; }
   // ---------- tabs ----------
   document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => {
     document.querySelectorAll('nav.tabs button').forEach(x => x.classList.toggle('sel', x === b));
-    ['code', 'meds', 'iv', 'calc', 'ref'].forEach(t => $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+    ['code', 'meds', 'iv', 'calc', 'vent', 'ref'].forEach(t => $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
     window.scrollTo(0, 0);
   });
 
@@ -809,5 +817,6 @@ input.search { font-size: 18px; margin-bottom: 12px; }
 })();
 </script>
 <script src="tools.js"></script>
+<script src="vent.js"></script>
 </body>
 </html>

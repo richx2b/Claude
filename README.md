@@ -13,6 +13,8 @@ An installable web app (PWA). Once it's hosted, open the link on your phone and 
 - **IV mix tab** — searchable cards: how to mix, how fast, and whether it can be pushed (adult standard mixes).
 - **Calc tab** — hemodynamics (SVR, PVR, CI, CPO, PAPi, shock pattern) and a step-by-step ABG interpreter
   (Winter's formula, albumin-corrected anion gap, delta ratio, P/F and A-a).
+- **Vent tab** — ideal body weight (height + sex), tidal volume at 4–8 mL/kg, typical starting settings
+  (normal or ARDS), and "what to change" suggestions from current settings + ABG, ARDSNet PEEP/FiO₂ table, DOPE.
 - **Reference tab** — BLS, ACLS, PALS numbers and post-ROSC targets.
 
 ### What each file does
@@ -20,6 +22,7 @@ An installable web app (PWA). Once it's hosted, open the link on your phone and 
 |---|---|
 | `code-app/index.html` | Screens, code timer, peds dosing |
 | `code-app/tools.js` | IV mixing cards, hemodynamics and ABG calculators |
+| `code-app/vent.js` | Ventilator tab |
 | `code-app/manifest.json` | Tells the phone it's an app: name, icon, open full screen |
 | `code-app/sw.js` | Saves a copy on the phone so it works offline |
 | `code-app/icon-*.png` | Home-screen icons |
