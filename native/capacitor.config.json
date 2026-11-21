@@ -1,0 +1,9 @@
+{
+  "appId": "com.richx2b.codetimer",
+  "appName": "Code Timer",
+  "webDir": "../code-app",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#0f1115"
+  }
+}

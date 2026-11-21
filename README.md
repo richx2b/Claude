@@ -26,6 +26,9 @@ An installable web app (PWA). Once it's hosted, open the link on your phone and 
 | `code-app/manifest.json` | Tells the phone it's an app: name, icon, open full screen |
 | `code-app/sw.js` | Saves a copy on the phone so it works offline |
 | `code-app/icon-*.png` | Home-screen icons |
+| `code-app/privacy.html`, `support.html` | Privacy policy and support pages (needed for the App Store) |
+| `native/` | iPhone app wrapper (Capacitor + Xcode project) |
+| `docs/app-store/` | Listing text, reviewer notes, screenshots, Mac walkthrough (`mac-guide.md`) |
 | `.github/workflows/pages.yml` | Publishes `code-app/` as a website whenever `main` changes |
 
 Memory aid only. Verify against the current AHA manuals and facility protocol.

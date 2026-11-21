@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cut">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f1115">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -108,9 +108,29 @@ input.search { font-size: 18px; margin-bottom: 12px; }
 .steps li:last-child { border-bottom: 0; }
 .steps .lbl { font-size: 13px; color: var(--muted); font-weight: 700; }
 .medcard .dose { font-size: 26px; }
+#ack { position: fixed; inset: 0; z-index: 50; background: var(--bg); overflow: auto;
+  padding: calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)); }
+#ack .box { max-width: 520px; margin: 0 auto; }
+#ack li { margin-bottom: 8px; }
+.src li { margin-bottom: 6px; font-size: 14px; }
 </style>
 </head>
 <body>
+<div id="ack" class="hidden" role="dialog" aria-modal="true" aria-labelledby="ackTitle">
+  <div class="box">
+    <h1 id="ackTitle" style="font-size:24px">Before you use Code Timer</h1>
+    <ul>
+      <li>This is a <b>clinical reference and memory aid for licensed healthcare professionals</b>, not a medical device.</li>
+      <li>It does not diagnose or treat. It doesn't replace clinical judgment, provider orders, pharmacy, or your facility's protocols.</li>
+      <li><b>Check every dose</b> against the order, the product label and the concentration in your hand.</li>
+      <li>Patients and families: talk to a doctor before making any medical decision.</li>
+      <li>Nothing you enter leaves this phone.</li>
+    </ul>
+    <button class="primary" id="ackBtn" style="width:100%;margin-top:12px">I understand</button>
+    <p class="note">Sources and methods are under Ref → About &amp; sources.</p>
+  </div>
+</div>
+
 <main>
 
 <!-- ============ CODE TAB ============ -->
@@ -379,6 +399,27 @@ input.search { font-size: 18px; margin-bottom: 12px; }
   </div>
   <p class="note">Summarized from the AHA BLS/ACLS/PALS algorithms. Check against your current AHA provider manual and facility protocol — this is a memory aid, not a substitute.</p>
   <div class="card">
+    <details>
+      <summary>About &amp; sources</summary>
+      <p class="note" style="color:var(--ink)">Code Timer is a reference and memory aid for licensed healthcare professionals. Every dose is calculated from weight using the mg/kg and maximum shown on its card. It is not a medical device and does not replace clinical judgment, provider orders, pharmacy or facility protocol. Check with a physician before making medical decisions.</p>
+      <ul class="src">
+        <li>American Heart Association. Guidelines for CPR and Emergency Cardiovascular Care (BLS, ACLS, PALS).</li>
+        <li>American Academy of Pediatrics, HealthyChildren.org: acetaminophen and ibuprofen dosing tables.</li>
+        <li>FDA product labeling (DailyMed) for the drugs listed.</li>
+        <li>ARDS Network. Lower tidal volumes in ARDS. N Engl J Med 2000;342:1301–8 (tidal volume, PEEP/FiO₂ table).</li>
+        <li>Devine BJ. Drug Intell Clin Pharm 1974;8:650–5 (ideal body weight).</li>
+        <li>Amato MBP et al. Driving pressure and survival in ARDS. N Engl J Med 2015;372:747–55.</li>
+        <li>Albert MS, Dell RB, Winters RW. Ann Intern Med 1967;66:312–22 (Winter's formula).</li>
+        <li>Figge J et al. Anion gap and hypoalbuminemia. Crit Care Med 1998;26:1807–10.</li>
+        <li>Fincke R et al. Cardiac power output in cardiogenic shock. J Am Coll Cardiol 2004;44:340–8.</li>
+        <li>Freedman SB et al. Oral ondansetron for gastroenteritis. N Engl J Med 2006;354:1698–705.</li>
+      </ul>
+      <p class="note">Privacy: no accounts, no tracking, no data sent anywhere. The current code log stays on this device until you reset it.</p>
+      <p class="note">Questions or a dose that looks wrong: <a href="https://github.com/richx2b/Claude/issues" target="_blank" rel="noopener">report it here</a>. Version 1.0.</p>
+      <button class="small" id="ackShow" style="width:100%;margin-top:8px">Show the disclaimer again</button>
+    </details>
+  </div>
+  <div class="card">
     <h2>Display</h2>
     <div class="seg">
       <button data-theme-set="auto">Auto</button><button data-theme-set="light">Light</button><button data-theme-set="dark">Dark</button>
@@ -434,15 +475,21 @@ input.search { font-size: 18px; margin-bottom: 12px; }
     g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + when + dur);
     o.connect(g).connect(a.destination); o.start(a.currentTime + when); o.stop(a.currentTime + when + dur + .02);
   }
-  const alertBig = () => { [0, .3, .6].forEach(w => tone(880, .22, w)); navigator.vibrate?.([400, 150, 400, 150, 400]); };
-  const alertSmall = () => { tone(660, .18); tone(660, .18, .25); navigator.vibrate?.([200, 100, 200]); };
+  // In the iPhone app (Capacitor), use native haptics and keep-awake; in a browser these are absent.
+  const NP = window.Capacitor?.isNativePlatform?.() ? window.Capacitor.Plugins : null;
+  const buzz = type => { try { NP?.Haptics?.notification({ type }); } catch {} };
+  const alertBig = () => { [0, .3, .6].forEach(w => tone(880, .22, w)); navigator.vibrate?.([400, 150, 400, 150, 400]);
+    buzz('ERROR'); setTimeout(() => buzz('ERROR'), 450); setTimeout(() => buzz('ERROR'), 900); };
+  const alertSmall = () => { tone(660, .18); tone(660, .18, .25); navigator.vibrate?.([200, 100, 200]); buzz('WARNING'); };
   const click = () => tone(1200, .03, 0, 0.25);
 
   let wakeLock = null;
   async function keepAwake() {
+    if (NP?.KeepAwake) { try { await NP.KeepAwake.keepAwake(); } catch {} return; }
     try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen');
       wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch {}
   }
+  function allowSleep() { try { NP?.KeepAwake?.allowSleep(); } catch {} try { wakeLock?.release(); } catch {} }
   document.addEventListener('visibilitychange', () => { if (!document.hidden && S.startedAt && !S.ended) keepAwake(); });
 
   // ---------- log ----------
@@ -568,11 +615,11 @@ input.search { font-size: 18px; margin-bottom: 12px; }
   $('roscBtn').onclick = () => { log('ROSC — check post-ROSC targets'); };
   $('endBtn').onclick = () => {
     if (!confirm('End the code? Timers stop; log is kept.')) return;
-    log('Code ended'); S.ended = true; S.endedAt = now(); save(); stopMetro(); try { wakeLock?.release(); } catch {} tick();
+    log('Code ended'); S.ended = true; S.endedAt = now(); save(); stopMetro(); allowSleep(); tick();
   };
   $('resetBtn').onclick = () => {
     if (!confirm('Clear this code and its log? Copy the log first if you need it.')) return;
-    const m = S.mode; S = blank(); S.mode = m; save(); stopMetro(); syncWeight(null); calc(); show();
+    const m = S.mode; S = blank(); S.mode = m; save(); stopMetro(); allowSleep(); syncWeight(null); calc(); show();
   };
   $('copyBtn').onclick = async () => {
     const lines = [`Code log — ${new Date(S.startedAt).toLocaleDateString()} — mode ${S.mode}${peds() ? ' — weight ' + kgTxt() : ''}`,
@@ -810,6 +857,13 @@ input.search { font-size: 18px; margin-bottom: 12px; }
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
+
+  // ---------- first-launch disclaimer ----------
+  const ACK = 'codeTimerAck.v1';
+  let acked = false; try { acked = localStorage.getItem(ACK) === '1'; } catch {}
+  $('ack').classList.toggle('hidden', acked);
+  $('ackBtn').onclick = () => { try { localStorage.setItem(ACK, '1'); } catch {} $('ack').classList.add('hidden'); };
+  $('ackShow').onclick = () => { $('ack').classList.remove('hidden'); window.scrollTo(0, 0); };
 
   syncWeight(null); calc();
   show();
